@@ -13,3 +13,17 @@
 .property-sheet .scroll-pane .accordion {
     -fx-padding: -1;
 }
+
+.grid-divider {
+    -fx-background-color: gainsboro;
+    -fx-border-color: lightgrey;
+    -fx-border-width: 0px 1px 0px 1px;
+}
+
+.grid-divider-top {
+    -fx-border-width: 1px 1px 0px 1px;
+}
+
+.grid-divider-bottom {
+    -fx-border-width: 0px 1px 1px 1px;
+}

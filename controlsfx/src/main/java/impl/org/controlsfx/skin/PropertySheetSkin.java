@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2013, 2016 ControlsFX
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of ControlsFX, any associated website, nor the
  * names of its contributors may be used to endorse or promote products
  * derived from this software without specific prior written permission.
- *
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,11 +32,19 @@ import static impl.org.controlsfx.i18n.Localization.localize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Accordion;
 import javafx.scene.control.Label;
@@ -51,9 +59,11 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
+import javafx.scene.layout.StackPane;
 import org.controlsfx.control.PropertySheet;
 import org.controlsfx.control.PropertySheet.Item;
 import org.controlsfx.control.PropertySheet.Mode;
@@ -67,15 +77,16 @@ import org.controlsfx.property.editor.PropertyEditor;
 public class PropertySheetSkin extends SkinBase<PropertySheet> {
     
     /**************************************************************************
-     * 
+     * <p>
      * Static fields
      * 
      **************************************************************************/
 
     private static final int MIN_COLUMN_WIDTH = 100;
+    private static final int DIVIDER_WIDTH = 4;
     
     /**************************************************************************
-     * 
+     * <p>
      * fields
      * 
      **************************************************************************/
@@ -91,7 +102,7 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
     
     
     /**************************************************************************
-     * 
+     * <p>
      * Constructors
      * 
      **************************************************************************/
@@ -143,7 +154,7 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
 
 
     /**************************************************************************
-     * 
+     * <p>
      * Overriding public API
      * 
      **************************************************************************/
@@ -155,7 +166,7 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
 
 
     /**************************************************************************
-     * 
+     * <p>
      * Implementation
      * 
      **************************************************************************/
@@ -172,18 +183,15 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
     }
     
     private Node buildPropertySheetContainer() {
-        switch( getSkinnable().modeProperty().get() ) {
+      //noinspection SwitchStatementWithTooFewBranches
+      switch( getSkinnable().modeProperty().get() ) {
             case CATEGORY: {
                 // group by category
-                Map<String, List<Item>> categoryMap = new TreeMap(getSkinnable().getCategoryComparator());
-                for( Item p: getSkinnable().getItems()) {
+                Map<String, List<Item>> categoryMap = new TreeMap<>(getSkinnable().getCategoryComparator());
+                for (Item p: getSkinnable().getItems()) {
                     String category = p.getCategory();
-                    List<Item> list = categoryMap.get(category);
-                    if ( list == null ) {
-                        list = new ArrayList<>();
-                        categoryMap.put( category, list);
-                    }
-                    list.add(p);
+                  List<Item> list = categoryMap.computeIfAbsent(category, k -> new ArrayList<>());
+                  list.add(p);
                 }
                 
                 // create category-based accordion
@@ -191,13 +199,13 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
                 for( String category: categoryMap.keySet() ) {
                 	PropertyPane props = new PropertyPane( categoryMap.get(category));
                 	// Only show non-empty categories 
-                	if ( props.getChildrenUnmodifiable().size() > 0 ) {
+                	if (!props.getChildrenUnmodifiable().isEmpty()) {
                        TitledPane pane = new TitledPane( category, props );
                        pane.setExpanded(true);
                        accordion.getPanes().add(pane);
                     }
                 }
-                if ( accordion.getPanes().size() > 0 ) {
+                if (!accordion.getPanes().isEmpty()) {
                     accordion.setExpandedPane(accordion.getPanes().get(0));
                 }
                 return accordion;
@@ -210,15 +218,21 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
 
     
     /**************************************************************************
-     * 
+     * <p>
      * Support classes / enums
      * 
      **************************************************************************/
     
     private class ActionChangeMode extends Action {
         
-    	private final Image CATEGORY_IMAGE = new Image(PropertySheetSkin.class.getResource("/org/controlsfx/control/format-indent-more.png").toExternalForm()); //$NON-NLS-1$
-    	private final Image NAME_IMAGE = new Image(PropertySheetSkin.class.getResource("/org/controlsfx/control/format-line-spacing-triple.png").toExternalForm()); //$NON-NLS-1$
+    	@SuppressWarnings("FieldCanBeLocal")
+      private final Image CATEGORY_IMAGE = new Image(Objects.requireNonNull(
+          PropertySheetSkin.class.getResource("/org/controlsfx/control/format-indent-more.png"
+      )).toExternalForm()); //$NON-NLS-1$
+      @SuppressWarnings("FieldCanBeLocal")
+    	private final Image NAME_IMAGE = new Image(Objects.requireNonNull(
+          PropertySheetSkin.class.getResource("/org/controlsfx/control/format-line-spacing-triple.png"
+      )).toExternalForm()); //$NON-NLS-1$
     	
         public ActionChangeMode(PropertySheet.Mode mode) {
             super(""); //$NON-NLS-1$
@@ -236,98 +250,173 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
         }
 
     }
-    
-    
+
+
     private class PropertyPane extends GridPane {
-        
-        public PropertyPane( List<Item> properties ) {
-            this( properties, 0 );
+
+        private final BooleanProperty dividerHovered = new SimpleBooleanProperty(false);
+        private final DoubleProperty col0Width = new SimpleDoubleProperty(MIN_COLUMN_WIDTH);
+        private boolean draggingDivider = false;
+        private double dragStartX;
+        private double col0StartWidth;
+
+        public PropertyPane(List<Item> properties) {
+            this(properties, 0);
         }
-        
-        public PropertyPane( List<Item> properties, int nestingLevel ) {
-            setVgap(5);
+
+        public PropertyPane(List<Item> properties, int nestingLevel) {
             setHgap(5);
-            setPadding(new Insets(5, 15, 5, 15 + nestingLevel*10 ));
+            setPadding(new Insets(5, 15, 5, 15 + nestingLevel * 10));
             getStyleClass().add("property-pane"); //$NON-NLS-1$
+
+            // No ColumnConstraints — we control widths manually
             setItems(properties);
-//            setGridLinesVisible(true);
         }
-        
-        public void setItems( List<Item> properties ) {
+
+        public void setItems(List<Item> properties) {
             getChildren().clear();
-            
+
             String filter = getSkinnable().titleFilter().get();
-            filter = filter == null? "": filter.trim().toLowerCase(); //$NON-NLS-1$
+            filter = filter == null ? "" : filter.trim().toLowerCase(); //$NON-NLS-1$
 
             int row = 0;
-            
+
             for (Item item : properties) {
 
-                // filter properties
                 String title = item.getName();
-               
-                if ( !filter.isEmpty() && title.toLowerCase().indexOf( filter ) < 0) continue;
-                
-                // setup property label
+                if (!filter.isEmpty() && !title.toLowerCase().contains(filter)) continue;
+
+                // Label with width bound to col0Width
                 Label label = new Label(title);
                 label.setMinWidth(MIN_COLUMN_WIDTH);
-                
-                // show description as a tooltip
+                label.prefWidthProperty().bind(col0Width);
+                label.setMaxWidth(Double.MAX_VALUE);
+
                 String description = item.getDescription();
-                if ( description != null && !description.trim().isEmpty()) {
+                if (description != null && !description.trim().isEmpty()) {
                     label.setTooltip(new Tooltip(description));
                 }
-                
+
                 add(label, 0, row);
 
-                // setup property editor
+                // Divider
+                Pane divider = new Pane();
+                divider.getStyleClass().add("grid-divider");
+                if (row == 0) {
+                    divider.getStyleClass().add("grid-divider-top");
+                } else if (row == properties.size() - 1) {
+                    divider.getStyleClass().add("grid-divider-bottom");
+                }
+                divider.setMinWidth(DIVIDER_WIDTH);
+                divider.setPrefWidth(DIVIDER_WIDTH);
+                divider.setMaxWidth(DIVIDER_WIDTH);
+                divider.setCursor(Cursor.H_RESIZE);
+
+                divider.setOpacity(0);
+                divider.opacityProperty().bind(
+                    Bindings.when(dividerHovered).then(1.0).otherwise(0.0)
+                );
+
+                divider.hoverProperty().addListener((obs, wasHovered, isHovered) -> {
+                    if (isHovered) {
+                        dividerHovered.set(true);
+                    } else {
+                        // Only clear if no other divider is hovered
+                        boolean anyHovered = getChildren().stream()
+                            .filter(n -> n.getStyleClass().contains("grid-divider"))
+                            .anyMatch(Node::isHover);
+                        dividerHovered.set(draggingDivider || anyHovered);
+                    }
+                });
+
+                divider.setOnMousePressed(e -> {
+                    draggingDivider = true;
+                    dragStartX = e.getScreenX();
+                    col0StartWidth = col0Width.get();
+                    e.consume();
+                });
+
+                divider.setOnMouseReleased(e -> {
+                    draggingDivider = false;
+                    e.consume();
+                });
+
+                divider.setOnMouseDragged(e -> {
+                    double delta = e.getScreenX() - dragStartX;
+                    double newCol0 = Math.max(MIN_COLUMN_WIDTH, col0StartWidth + delta);
+
+                    double totalAvailable = getWidth() - getInsets().getLeft() - getInsets().getRight()
+                        - DIVIDER_WIDTH - getHgap() * 2;
+                    double maxCol0 = totalAvailable - MIN_COLUMN_WIDTH;
+                    newCol0 = Math.min(newCol0, maxCol0);
+
+                    col0Width.set(newCol0);
+                    e.consume();
+                });
+
+                add(divider, 1, row);
+
+                // Editor with width bound to remaining space
                 Node editor = getEditor(item);
-                
                 if (editor instanceof Region) {
-                    ((Region)editor).setMinWidth(MIN_COLUMN_WIDTH);
-                    ((Region)editor).setMaxWidth(Double.MAX_VALUE);
+                    ((Region) editor).setMinWidth(MIN_COLUMN_WIDTH);
+                    ((Region) editor).setMaxWidth(Double.MAX_VALUE);
                 }
                 label.setLabelFor(editor);
-                add(editor, 1, row);
-                GridPane.setHgrow(editor, Priority.ALWAYS);
-                
-                //TODO add support for recursive properties
-                
+                StackPane editorContainer = new StackPane(editor);
+                editorContainer.setPadding(new Insets(3, 0, 3, 0));
+
+                // Bind editor width = total width - col0 - divider - gaps - insets
+                editorContainer.prefWidthProperty().bind(
+                widthProperty()
+                    .subtract(insetsLeftProperty())
+                    .subtract(insetsRightProperty())
+                    .subtract(col0Width)
+                    .subtract(DIVIDER_WIDTH)
+                    .subtract(getHgap() * 2)
+                );
+
+                add(editorContainer, 2, row);
+
                 row++;
             }
-            
         }
-        
+
+        private DoubleBinding insetsLeftProperty() {
+            return Bindings.createDoubleBinding(() -> getInsets().getLeft(), insetsProperty());
+        }
+
+        private DoubleBinding insetsRightProperty() {
+            return Bindings.createDoubleBinding(() -> getInsets().getRight(), insetsProperty());
+        }
+
         @SuppressWarnings("unchecked")
         private Node getEditor(Item item) {
-            @SuppressWarnings("rawtypes")
+        @SuppressWarnings("rawtypes")
             PropertyEditor editor = getSkinnable().getPropertyEditorFactory().call(item);
             if (editor == null) {
-                editor = new AbstractPropertyEditor<Object, TextField>(item, new TextField(), true) {
+                editor = new AbstractPropertyEditor<>(item, new TextField(), true) {
                     {
                         getEditor().setEditable(false);
                         getEditor().setDisable(true);
                     }
-                    
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override protected ObservableValue<Object> getObservableValue() {
-                        return (ObservableValue<Object>)(Object)getEditor().textProperty();
+
+                    @Override
+                    protected ObservableValue<Object> getObservableValue() {
+                        return (ObservableValue<Object>) (Object) getEditor().textProperty();
                     }
-                    
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override public void setValue(Object value) {
-                        getEditor().setText(value == null? "": value.toString()); //$NON-NLS-1$
+
+                    @Override
+                    public void setValue(Object value) {
+                        getEditor().setText(value == null ? "" : value.toString()); //$NON-NLS-1$
                     }
                 };
-            } else if (! item.isEditable()) {
+            } else if (!item.isEditable()) {
                 editor.getEditor().setDisable(true);
             }
             editor.setValue(item.getValue());
             return editor.getEditor();
         }
     }
+
 }
