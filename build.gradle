@@ -72,6 +72,10 @@ subprojects {
     tasks.withType(GenerateModuleMetadata) {
         enabled = false
     }
+
+    tasks.withType(Sign).configureEach {
+        enabled = false
+    }
 }
 
 // nexus publish plugin needs this
