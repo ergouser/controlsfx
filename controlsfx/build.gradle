@@ -165,3 +165,7 @@ task deleteUtf8Files(type: Delete) {
 processResources.dependsOn(downloadTranslations)
 downloadTranslations.dependsOn(native2ascii)
 native2ascii.dependsOn(deleteUtf8Files)
+
+signing {
+    required = false
+}
